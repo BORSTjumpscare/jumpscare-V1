@@ -116,11 +116,11 @@ function executeJumpscare() {
 setTimeout(() => {
     fullscreenOverlay.remove();
 
-    // RESET STATE so it can happen again
+ // reset so it can happen again
     jumpscare = false;
     jumpscareQueued = false;
 
-    console.log("[FNAF] Freddy has left... for now.");
+    console.log("[FNAF] Freddy can strike again.");
 }, 3000);
         }, 1500);
     });
