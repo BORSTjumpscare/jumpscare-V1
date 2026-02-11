@@ -33,44 +33,66 @@ function executeJumpscare() {
     });
     document.body.appendChild(overlay);
 
+    // Fade background
     setTimeout(() => overlay.style.backgroundColor = "rgba(0,0,0,0.6)", 50);
 
+    // Jumpscare image
     const img = document.createElement("img");
     img.src = chrome.runtime.getURL("assets/fredbear.gif");
     Object.assign(img.style, { width: "100%", height: "100%", objectFit: "cover" });
 
+    // Static image (initially invisible)
     const staticImg = document.createElement("img");
     staticImg.src = chrome.runtime.getURL("assets/static.gif");
-    Object.assign(staticImg.style, { width: "100%", height: "100%", objectFit: "cover", opacity: 0, position: "absolute", top:0, left:0 });
+    Object.assign(staticImg.style, {
+        width: "100%",
+        height: "100%",
+        objectFit: "cover",
+        opacity: 0,
+        position: "absolute",
+        top: 0,
+        left: 0
+    });
 
-    overlay.appendChild(img);
-    overlay.appendChild(staticImg);
-
+    // Audio
     const audio = document.createElement("audio");
     audio.src = chrome.runtime.getURL("assets/audio.mp3");
     audio.volume = 1.0;
     audio.autoplay = true;
     audio.play().catch(() => console.log("[FNAF] Audio blocked"));
+    
+    overlay.appendChild(img);
+    overlay.appendChild(staticImg);
     overlay.appendChild(audio);
 
     img.addEventListener("load", () => {
         audio.play();
 
+        // Step 1: show main jumpscare image
         setTimeout(() => {
             img.remove();
-            staticImg.style.transition = "opacity 0.3s";
-            staticImg.style.opacity = 1; // fade in static
 
+            // Step 2: fade in static overlay
+            staticImg.style.transition = "opacity 0.5s";
+            staticImg.style.opacity = 1;
+
+            // Step 3: keep static for 3 seconds then fade out
             setTimeout(() => {
-                overlay.remove();
-                jumpscare = false;
-                jumpscareQueued = false;
-                console.log("[FNAF] Freddy can strike again.");
-            }, 3000);
-        }, 1500);
+                staticImg.style.transition = "opacity 0.5s";
+                staticImg.style.opacity = 0;
+
+                // Step 4: remove overlay after fade out
+                setTimeout(() => {
+                    overlay.remove();
+                    jumpscare = false;
+                    jumpscareQueued = false;
+                    console.log("[FNAF] Freddy can strike again.");
+                }, 500); // fade-out duration
+            }, 3000); // static display duration
+        }, 1500); // jumpscare image display duration
     });
 
-    // Failsafe
+    // Failsafe: remove overlay after 10s if something goes wrong
     setTimeout(() => {
         if (document.getElementById("fnaf-jumpscare-overlay")) {
             overlay.remove();
@@ -86,9 +108,7 @@ document.addEventListener("keydown", e => {
     if (e.ctrlKey || e.altKey || e.metaKey) return; // ignore modifiers
 
     if (e.key === secretCombo[comboIndex]) {
-        if (comboIndex === 0) {
-            comboTimer = setTimeout(() => comboIndex = 0, comboTime);
-        }
+        if (comboIndex === 0) comboTimer = setTimeout(() => comboIndex = 0, comboTime);
 
         comboIndex++;
 
@@ -103,7 +123,7 @@ document.addEventListener("keydown", e => {
         comboIndex = 0;
         if (comboTimer) clearTimeout(comboTimer);
     }
-}, true); // capture phase ensures detection even in inputs
+}, true); // capture phase ensures detection even in input fields
 
 // --- Infinite jumpscare loop ---
 async function jumpscareLoop() {
