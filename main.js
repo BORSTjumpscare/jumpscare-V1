@@ -3,7 +3,6 @@ console.log("FNAF jumpscare extension loaded");
 // --- Flags for jumpscare state ---
 let jumpscare = false;
 let jumpscareQueued = false;
-;
 
 // --- Random delay helpers ---
 function randomDelay() {
