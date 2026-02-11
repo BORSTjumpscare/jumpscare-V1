@@ -40,7 +40,7 @@ function executeJumpscare() {
 
     // Step 2: Trigger slight fade
     setTimeout(() => {
-        overlay.style.backgroundColor = "rgba(0,0,0,0.2)"; // slightly darker
+        overlay.style.backgroundColor = "rgba(0,0,0,0.6)"; // slightly darker
     }, 50); // tiny delay for transition to work
 
     // Step 3: Wait 2 seconds for fade before jumpscare
