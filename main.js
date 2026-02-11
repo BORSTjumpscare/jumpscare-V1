@@ -123,3 +123,4 @@ setTimeout(() => {
         }, 1500);
     });
 }
+overlayJumpscare();
