@@ -88,8 +88,22 @@ function executeJumpscare() {
 }
 
 // --- Secret combo: type 1 -> 9 -> 8 -> 7 within 3 seconds ---
+const secretCombo = ["1", "9", "8", "7"];
+let comboProgress = 0;
+let comboTimer = null;
+const comboMaxTime = 3000; // 3 seconds to complete combo
+
 document.addEventListener("keydown", (event) => {
+    // Check if the current key is the expected one in the sequence
     if (event.key === secretCombo[comboProgress]) {
+        if (comboProgress === 0) {
+            // Start 3-second timer from the first key
+            comboTimer = setTimeout(() => {
+                comboProgress = 0;
+                comboTimer = null;
+            }, comboMaxTime);
+        }
+
         comboProgress++;
 
         if (comboProgress === secretCombo.length) {
@@ -102,18 +116,11 @@ document.addEventListener("keydown", (event) => {
             comboProgress = 0;
             clearTimeout(comboTimer);
             comboTimer = null;
-        } else {
-            // Reset 3-second timer
-            clearTimeout(comboTimer);
-            comboTimer = setTimeout(() => {
-                comboProgress = 0;
-                comboTimer = null;
-            }, comboMaxTime);
         }
     } else {
-        // Wrong key resets combo
+        // Wrong key resets everything
         comboProgress = 0;
-        clearTimeout(comboTimer);
+        if (comboTimer) clearTimeout(comboTimer);
         comboTimer = null;
     }
 });
