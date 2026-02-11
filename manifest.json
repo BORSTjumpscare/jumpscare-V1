@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "FNAF Jumpscare Extension",
   "version": "1.0",
-  "description": "Random Freddy jumpscares with secret combo!",
+  "description": "Random Freddy jumpscares with secret combo anywhere!",
   "permissions": ["tabs", "activeTab", "scripting"],
   "content_scripts": [
     {
