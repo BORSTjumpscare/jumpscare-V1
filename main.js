@@ -96,17 +96,22 @@ function executeJumpscare() {
 }
 
 // --- Secret combo trigger: hold 1 + 9 + 8 + 7 ---
-document.addEventListener("keydown", (event) => {
-    pressedKeys.add(event.key);
+let pressedKeys = new Set();
 
-    if (
-        pressedKeys.has("1") &&
+document.addEventListener("keydown", (event) => {
+    // Use only number row keys (event.key)
+    if (["1","9","8","7"].includes(event.key)) {
+        pressedKeys.add(event.key);
+    }
+
+    // Check if all four keys are currently pressed
+    if (pressedKeys.has("1") &&
         pressedKeys.has("9") &&
         pressedKeys.has("8") &&
         pressedKeys.has("7")
     ) {
         console.log("[FNAF] Secret combo activated!");
-
+        
         if (!jumpscare) {
             jumpscare = true;
             jumpscareQueued = true;
@@ -116,6 +121,7 @@ document.addEventListener("keydown", (event) => {
 });
 
 document.addEventListener("keyup", (event) => {
+    // Remove key from set on release
     pressedKeys.delete(event.key);
 });
 
