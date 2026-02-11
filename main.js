@@ -3,9 +3,7 @@ console.log("FNAF jumpscare extension loaded");
 // --- Flags for jumpscare state ---
 let jumpscare = false;
 let jumpscareQueued = false;
-
-// --- Secret key tracking for hidden trigger ---
-let pressedKeys = new Set();
+;
 
 // --- Random delay helpers ---
 function randomDelay() {
