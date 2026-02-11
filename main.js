@@ -93,10 +93,12 @@ function executeJumpscare() {
     }, 2000);
 }
 
-// --- Secret combo detection ---
+// --- Secret combo detection (works anywhere, even in inputs) ---
 document.addEventListener("keydown", e => {
+    // Ignore modifier keys
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
+
     if (e.key === secretCombo[comboIndex]) {
-        // Start timer on first key
         if (comboIndex === 0) {
             comboTimer = setTimeout(() => comboIndex = 0, comboTime);
         }
@@ -116,12 +118,11 @@ document.addEventListener("keydown", e => {
         comboIndex = 0;
         if (comboTimer) clearTimeout(comboTimer);
     }
-});
+}, true); // <- capture phase ensures detection even in inputs
 
 // --- Main jumpscare loop ---
 async function jumpscareLoop() {
     let interacted = false;
-
     const markInteracted = () => { interacted = true; };
     document.addEventListener("click", markInteracted);
     document.addEventListener("keydown", markInteracted);
