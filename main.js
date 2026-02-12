@@ -1,4 +1,4 @@
-console.log("FNAF jumpscare extension loaded!");
+console.log("FNAF jumpscare content script loaded!");
 
 // --- Flags ---
 let jumpscare = false;
@@ -11,8 +11,17 @@ let comboTimer = null;
 const comboTime = 3000; // 3 seconds to complete combo
 
 // --- Random delay helpers ---
-function randomDelay(max = 10000) { return Math.floor(Math.random() * max); }
-function randomCheckDelay(max = 5000) { return Math.floor(Math.random() * max); }
+function randomDelay() { return Math.floor(Math.random() * 10000); }
+function randomCheckDelay() { return Math.floor(Math.random() * 5000); }
+
+// --- Check if tab is focused ---
+function isTabFocused() {
+    return new Promise(resolve => {
+        chrome.runtime.sendMessage({ action: "checkFocus" }, response => {
+            resolve(response?.isFocused ?? false);
+        });
+    });
+}
 
 // --- Execute jumpscare ---
 function executeJumpscare() {
@@ -29,93 +38,77 @@ function executeJumpscare() {
         height: "100vh",
         zIndex: "9999",
         backgroundColor: "rgba(0,0,0,0)",
-        transition: "background-color 1.5s"
+        transition: "background-color 2s"
     });
     document.body.appendChild(overlay);
 
-    // Fade background
+    // Fade in
     setTimeout(() => overlay.style.backgroundColor = "rgba(0,0,0,0.6)", 50);
 
-    // Jumpscare image
-    const img = document.createElement("img");
-    img.src = chrome.runtime.getURL("assets/fredbear.gif");
-    Object.assign(img.style, { width: "100%", height: "100%", objectFit: "cover" });
+    // Jumpscare media
+    setTimeout(() => {
+        const img = document.createElement("img");
+        img.src = chrome.runtime.getURL("assets/fredbear.gif");
+        Object.assign(img.style, { width: "100%", height: "100%", objectFit: "cover" });
 
-    // Static image (initially invisible)
-    const staticImg = document.createElement("img");
-    staticImg.src = chrome.runtime.getURL("assets/static.gif");
-    Object.assign(staticImg.style, {
-        width: "100%",
-        height: "100%",
-        objectFit: "cover",
-        opacity: 0,
-        position: "absolute",
-        top: 0,
-        left: 0
-    });
+        const audio = document.createElement("audio");
+        audio.src = chrome.runtime.getURL("assets/audio.mp3");
+        audio.volume = 1.0;
+        audio.autoplay = true;
+        audio.play().catch(() => console.log("[FNAF] Audio blocked"));
 
-    // Audio
-    const audio = document.createElement("audio");
-    audio.src = chrome.runtime.getURL("assets/audio.mp3");
-    audio.volume = 1.0;
-    audio.autoplay = true;
-    audio.play().catch(() => console.log("[FNAF] Audio blocked"));
-    
-    overlay.appendChild(img);
-    overlay.appendChild(staticImg);
-    overlay.appendChild(audio);
+        const staticImg = document.createElement("img");
+        staticImg.src = chrome.runtime.getURL("assets/static.gif");
+        Object.assign(staticImg.style, { width: "100%", height: "100%", objectFit: "cover" });
 
-    img.addEventListener("load", () => {
-        audio.play();
+        overlay.appendChild(img);
+        overlay.appendChild(audio);
 
-        // Step 1: show main jumpscare image
-        setTimeout(() => {
-            img.remove();
+        img.addEventListener("load", () => {
+            audio.play();
 
-            // Step 2: fade in static overlay
-            staticImg.style.transition = "opacity 0.5s";
-            staticImg.style.opacity = 1;
-
-            // Step 3: keep static for 3 seconds then fade out
             setTimeout(() => {
-                staticImg.style.transition = "opacity 0.5s";
-                staticImg.style.opacity = 0;
+                overlay.removeChild(img);
+                overlay.appendChild(staticImg);
 
-                // Step 4: remove overlay after fade out
                 setTimeout(() => {
                     overlay.remove();
                     jumpscare = false;
                     jumpscareQueued = false;
                     console.log("[FNAF] Freddy can strike again.");
-                }, 500); // fade-out duration
-            }, 3000); // static display duration
-        }, 1500); // jumpscare image display duration
-    });
+                }, 3000);
+            }, 1500);
+        });
 
-    // Failsafe: remove overlay after 10s if something goes wrong
-    setTimeout(() => {
-        if (document.getElementById("fnaf-jumpscare-overlay")) {
-            overlay.remove();
-            jumpscare = false;
-            jumpscareQueued = false;
-            console.log("[FNAF] Failsafe triggered, overlay removed.");
-        }
-    }, 10000);
+        // --- Failsafe: remove overlay after 10s ---
+        setTimeout(() => {
+            if (document.getElementById("fnaf-jumpscare-overlay")) {
+                overlay.remove();
+                jumpscare = false;
+                jumpscareQueued = false;
+                console.log("[FNAF] Failsafe triggered, overlay removed.");
+            }
+        }, 10000);
+
+    }, 2000);
 }
 
 // --- Secret combo detection ---
 document.addEventListener("keydown", e => {
-    if (e.ctrlKey || e.altKey || e.metaKey) return; // ignore modifiers
-
     if (e.key === secretCombo[comboIndex]) {
-        if (comboIndex === 0) comboTimer = setTimeout(() => comboIndex = 0, comboTime);
+        // Start timer on first key
+        if (comboIndex === 0) {
+            comboTimer = setTimeout(() => comboIndex = 0, comboTime);
+        }
 
         comboIndex++;
 
         if (comboIndex === secretCombo.length) {
             console.log("[FNAF] Secret combo triggered!");
-            jumpscareQueued = true;
-            executeJumpscare();
+            if (!jumpscare) {
+                jumpscareQueued = true;
+                executeJumpscare();
+            }
             comboIndex = 0;
             if (comboTimer) clearTimeout(comboTimer);
         }
@@ -123,36 +116,35 @@ document.addEventListener("keydown", e => {
         comboIndex = 0;
         if (comboTimer) clearTimeout(comboTimer);
     }
-}, true); // capture phase ensures detection even in input fields
+});
 
-// --- Infinite jumpscare loop ---
+// --- Main jumpscare loop ---
 async function jumpscareLoop() {
     let interacted = false;
+
     const markInteracted = () => { interacted = true; };
     document.addEventListener("click", markInteracted);
     document.addEventListener("keydown", markInteracted);
 
-    while (true) { // infinite loop
-        // Step 1: Randomly queue jumpscare
-        while (!jumpscareQueued) {
-            await new Promise(r => setTimeout(r, randomDelay()));
-            if (Math.random() < 0.03) jumpscareQueued = true;
-        }
+    // Randomly queue jumpscare
+    while (!jumpscareQueued) {
+        await new Promise(r => setTimeout(r, randomDelay()));
+        if (Math.random() < 0.03) jumpscareQueued = true;
+    }
 
-        // Step 2: Wait for interaction & tab focus
-        while (!jumpscare) {
-            await new Promise(r => setTimeout(r, randomCheckDelay()));
-            if (interacted && !jumpscare) {
-                if (Math.random() < 0.5) {
-                    console.log("[FNAF] Freddy backed out!");
-                    jumpscareQueued = false; // allow next loop
-                } else {
-                    executeJumpscare();
-                }
+    // Wait for tab focus and interaction
+    while (!jumpscare) {
+        await new Promise(r => setTimeout(r, randomCheckDelay()));
+        const focused = await isTabFocused();
+        if (focused && interacted && !jumpscare) {
+            if (Math.random() < 0.5) {
+                console.log("[FNAF] Freddy backed out!");
+            } else {
+                executeJumpscare();
             }
         }
     }
 }
 
-// --- Start infinite loop ---
+// --- Start ---
 jumpscareLoop();
